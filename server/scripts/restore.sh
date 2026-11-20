@@ -129,8 +129,8 @@ else
   echo "Restore failed; the previous database and Vault key were retained" >&2
   exit 1
 fi
-if [ "$storage_backup" = true ]; then compose up -d --wait storage; fi
-compose up -d --wait db auth realtime migrate rest gateway functions
+sh "$server_dir/scripts/run-migrations.sh"
+compose up -d --wait db auth realtime rest gateway functions
 if [ "$web_was_running" = true ]; then
   compose up -d --wait web
 fi

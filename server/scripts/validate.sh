@@ -3,6 +3,7 @@ set -eu
 
 server_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 compose="$server_dir/compose.yaml"
+maintenance="$server_dir/compose.migrate.yaml"
 example="$server_dir/.env.example"
 
 for path in \
@@ -22,12 +23,19 @@ done
 
 rendered=$(docker compose --project-directory "$server_dir" --env-file "$example" -f "$compose" config)
 services=$(docker compose --project-directory "$server_dir" --env-file "$example" -f "$compose" config --services)
-for service in db auth rest realtime migrate gateway functions web; do
+for service in db auth rest realtime gateway functions web; do
   printf '%s\n' "$services" | grep -qx "$service" || {
     echo "Missing service: $service" >&2
     exit 1
   }
 done
+if printf '%s\n' "$services" | grep -qx migrate; then
+  echo "Migrations must run separately from the application stack" >&2
+  exit 1
+fi
+maintenance_services=$(docker compose --project-directory "$server_dir" --env-file "$example" \
+  -f "$compose" -f "$maintenance" --profile maintenance config --services)
+printf '%s\n' "$maintenance_services" | grep -qx migrate
 
 for scheme in pomodoist-dev pomodoist-stg pomodoist; do
   printf '%s\n' "$rendered" | grep -Fq "$scheme://login-callback"

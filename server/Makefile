@@ -23,7 +23,7 @@ up:
 
 core-up:
 	@test -f .env || (echo 'Run make setup first.' >&2; exit 1)
-	$(COMPOSE) up -d --build --wait db auth rest realtime migrate gateway functions
+	$(COMPOSE) up -d --build --wait db auth rest realtime gateway functions
 
 down:
 	$(COMPOSE) down
@@ -35,7 +35,7 @@ logs:
 	$(COMPOSE) logs -f $(SERVICE)
 
 migrate:
-	$(COMPOSE) run --rm --name pomodoist-selfhost-migrate-manual migrate
+	sh scripts/run-migrations.sh
 
 backup:
 	sh scripts/backup.sh $(BACKUP_DIR)

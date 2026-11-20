@@ -65,7 +65,7 @@ services:
       GOTRUE_EXTERNAL_GOOGLE_ENABLED: ${GOOGLE_AUTH_ENABLED:-false}
       GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: ${GOOGLE_AUTH_CLIENT_ID:-}
       GOTRUE_EXTERNAL_GOOGLE_SECRET: ${GOOGLE_AUTH_CLIENT_SECRET:-}
-      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: ${API_EXTERNAL_URL:?API_EXTERNAL_URL is required}/callback
+      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: ${GOOGLE_AUTH_REDIRECT_URI:-${API_EXTERNAL_URL:?API_EXTERNAL_URL is required}/callback}
       GOTRUE_SECURITY_CAPTCHA_ENABLED: ${CAPTCHA_ENABLED:-false}
       GOTRUE_SECURITY_CAPTCHA_PROVIDER: ${CAPTCHA_PROVIDER:-turnstile}
       GOTRUE_SECURITY_CAPTCHA_SECRET: ${CAPTCHA_SECRET:-}
@@ -83,8 +83,8 @@ services:
     image: docker.io/postgrest/postgrest:v14.12@sha256:54000f24847d01a2c2302e0041cf0618b875c57fb48507d743cfa9aaa50bf43c
     restart: unless-stopped
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "postgrest", "--ready"]
       interval: 5s
@@ -137,25 +137,6 @@ services:
       RUN_JANITOR: "true"
       DISABLE_HEALTHCHECK_LOGGING: "true"
 
-  migrate:
-    container_name: pomodoist-selfhost-migrate
-    image: docker.io/supabase/postgres:17.6.1.127@sha256:be60aee15997daca475b710b734bc6bfe52cd544dcd7e9fd2ff58210b6747d83
-    restart: "no"
-    depends_on:
-      auth:
-        condition: service_healthy
-      realtime:
-        condition: service_healthy
-    environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD:?run make setup first}
-    volumes:
-      - ./scripts/migrate.sh:/opt/pomodoist/migrate.sh:ro
-      - ./supabase/migrations:/opt/pomodoist/migrations:ro
-      - ./supabase/legacy:/opt/pomodoist/legacy:ro
-      - ./database/application-fingerprint.sql:/opt/pomodoist/application-fingerprint.sql:ro
-      - ./database/enable-selfhost.sql:/opt/pomodoist/enable-selfhost.sql:ro
-    entrypoint: ["/bin/sh", "/opt/pomodoist/migrate.sh"]
-
   gateway:
     container_name: pomodoist-selfhost-gateway
     build:
@@ -195,8 +176,6 @@ services:
     depends_on:
       gateway:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/127.0.0.1/9000'"]
       interval: 5s

@@ -55,23 +55,11 @@ services:
     depends_on:
       storage:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     environment:
       SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:?run make setup first}
     volumes:
       - ./scripts/storage-config.mjs:/opt/pomodoist/storage-config.mjs:ro
     entrypoint: ["node", "/opt/pomodoist/storage-config.mjs"]
-
-  migrate:
-    environment:
-      POMODOIST_FILES_STORAGE_ENABLED: "true"
-      POMODOIST_FILES_CLEANUP_URL: http://gateway:8000/functions/v1/pomodoist-files-cleanup
-      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:?run make setup first}
-      POMODOIST_FILES_CLEANUP_SECRET: ${POMODOIST_FILES_CLEANUP_SECRET:-${SERVICE_ROLE_KEY}}
-    depends_on:
-      storage:
-        condition: service_healthy
 
   functions:
     depends_on:

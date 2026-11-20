@@ -34,14 +34,10 @@ jobs:
         run: python3 -m unittest server/tests/test_sync_health.py
       - name: Generate an independent instance
         run: make -C server setup
-      - name: Start fresh database and API
-        run: |
-          if make -C server core-up; then
-            exit 0
-          fi
-          docker compose --project-directory server --env-file server/.env \
-            -f server/compose.yaml logs --no-color migrate
-          exit 1
+      - name: Apply migrations to the fresh database
+        run: make -C server migrate
+      - name: Start the API
+        run: make -C server core-up
       - name: Test schema, ownership, and synchronization
         run: make -C server test-db test-smoke test-sessions
       - name: Verify concurrent Focus authority and idempotent replay

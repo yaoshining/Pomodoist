@@ -1,0 +1,7 @@
+services:
+  migrate:
+    environment:
+      POMODOIST_FILES_STORAGE_ENABLED: "true"
+      POMODOIST_FILES_CLEANUP_URL: http://gateway:8000/functions/v1/pomodoist-files-cleanup
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:?run make setup first}
+      POMODOIST_FILES_CLEANUP_SECRET: ${POMODOIST_FILES_CLEANUP_SECRET:-${SERVICE_ROLE_KEY}}

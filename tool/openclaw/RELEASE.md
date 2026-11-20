@@ -152,7 +152,9 @@ This is ClawHub's package fingerprint, not the website skill's SHA-256.
 ```sh
 node --experimental-strip-types --test tool/openclaw/*.test.mjs
 deno test --config server/supabase/deno.json --allow-env --allow-net --allow-read server/supabase/functions
-make -C server setup core-up
+make -C server setup
+make -C server migrate
+make -C server core-up
 make -C server test-db test-smoke test-openclaw
 sh tool/test_public_boundary.sh
 git diff --check

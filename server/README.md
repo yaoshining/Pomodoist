@@ -15,6 +15,7 @@ From this directory:
 
 ```sh
 make setup
+make migrate
 make up
 ```
 
@@ -27,7 +28,7 @@ The default endpoints are:
 
 Create accounts in the web app. Local email accounts are auto-confirmed by default, so an SMTP server is not required for initial setup. Set `ENABLE_EMAIL_AUTOCONFIRM=false` and configure the `SMTP_*` values before requiring email verification.
 
-The startup migration enables local Pomodoist access for this independent instance. The setting lives in a private schema, and account ownership and row-level isolation remain enforced.
+The migration enables local Pomodoist access for this independent instance. The setting lives in a private schema, and account ownership and row-level isolation remain enforced. Run `make migrate` before first startup and when applying a new set of migrations. It starts required database services, runs the migration in a disposable container, and removes that container on exit. Hosts without Make can use `sh server/scripts/run-migrations.sh` from the repository root.
 
 Useful commands:
 
@@ -41,13 +42,15 @@ make backup
 make down                 # preserves all data
 ```
 
-`make core-up` starts the API and function services without building the Flutter web image.
+`make up` and `make core-up` use the installed schema. Routine starts do not run migrations. `make core-up` starts the API and function services without building the Flutter web image.
 
 ## Configuration
 
 Edit `.env` before the first `make up` when changing ports or public URLs. Core startup does not require provider keys.
 
 For Google sign-in, set `GOOGLE_AUTH_ENABLED=true`, its client ID and secret, and register `${API_EXTERNAL_URL}/callback` with Google. Google Calendar, Telegram, AI providers, CAPTCHA, monitoring, and Stripe each use the matching optional variables in `.env`. Stripe checkout stays disabled unless `STRIPE_CHECKOUT_ENABLED=true` and its required Stripe values are configured.
+
+If the API is private, set `GOOGLE_AUTH_REDIRECT_URI` to a dedicated HTTPS hostname and path that forwards to the same Auth callback. Register that exact URI with Google. Keep the application's post-login return URLs in `ADDITIONAL_REDIRECT_URLS`.
 
 The browser receives only `ANON_KEY`; `SERVICE_ROLE_KEY`, the database password, and provider secrets stay in server containers. The database schema enforces account ownership and row-level isolation.
 
@@ -91,6 +94,7 @@ S3 API). Keep credentials server-side and block public bucket access.
 
 ```sh
 export COMPOSE_OVERLAYS=compose.storage.yaml
+make migrate
 make up
 ```
 
@@ -275,6 +279,8 @@ backup. Do not bypass the backup release-fingerprint check.
 
 
 Container versions are pinned in `compose.yaml` and the Dockerfiles. Read the upstream self-hosting changelog before changing them. PostgreSQL major versions require a documented database upgrade; changing the image tag alone cannot upgrade an existing data volume. Make a verified backup before any version update.
+
+After checking out the target release, apply its migrations with `make migrate` and start the services with `make up` after the migration succeeds.
 
 This package intentionally omits Studio, Storage, image transformation, connection pooling, and log analytics because Pomodoist core does not need them. Add a service only when a deployed feature requires it.
 

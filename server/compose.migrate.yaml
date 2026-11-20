@@ -1,0 +1,13 @@
+services:
+  migrate:
+    profiles: [maintenance]
+    image: docker.io/supabase/postgres:17.6.1.127@sha256:be60aee15997daca475b710b734bc6bfe52cd544dcd7e9fd2ff58210b6747d83
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?run make setup first}
+    volumes:
+      - ./scripts/migrate.sh:/opt/pomodoist/migrate.sh:ro
+      - ./supabase/migrations:/opt/pomodoist/migrations:ro
+      - ./supabase/legacy:/opt/pomodoist/legacy:ro
+      - ./database/application-fingerprint.sql:/opt/pomodoist/application-fingerprint.sql:ro
+      - ./database/enable-selfhost.sql:/opt/pomodoist/enable-selfhost.sql:ro
+    entrypoint: ["/bin/sh", "/opt/pomodoist/migrate.sh"]
